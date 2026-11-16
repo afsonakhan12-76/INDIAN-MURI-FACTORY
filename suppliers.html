@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Supplier Management</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#f1f5f9;font-family:Arial,sans-serif;color:#1e293b}
+header{background:#166534;color:white;padding:18px;font-size:21px;font-weight:bold}
+.container{max-width:850px;margin:20px auto;padding:15px}
+.card{background:white;padding:20px;border-radius:12px;margin-bottom:18px;box-shadow:0 2px 8px #00000010}
+h2{margin-top:0;font-size:19px}
+input{width:100%;padding:13px;margin:7px 0 14px;border:1px solid #cbd5e1;border-radius:7px;font-size:16px}
+label{font-size:14px;font-weight:bold}
+button{padding:12px 18px;border:0;border-radius:7px;background:#15803d;color:white;font-size:15px;cursor:pointer}
+.back{background:#475569}
+table{width:100%;border-collapse:collapse;min-width:550px}
+th,td{padding:12px;border-bottom:1px solid #e2e8f0;text-align:left}
+th{background:#f8fafc}
+.table-wrap{overflow-x:auto}
+#message{margin:12px 0;font-size:14px}
+</style>
+</head>
+<body>
+
+<header>INDIAN MURI FACTORY</header>
+
+<div class="container">
+
+<div class="card">
+<button class="back" onclick="location.href='dashboard.html'">← Dashboard</button>
+<h2>➕ Add New Supplier</h2>
+
+<form id="supplierForm">
+<label>Supplier Name</label>
+<input id="supplierName" required placeholder="Enter supplier name">
+
+<label>Phone Number</label>
+<input id="phone" type="tel" placeholder="Enter phone number">
+
+<label>Address</label>
+<input id="address" placeholder="Enter address">
+
+<label>Opening Balance (₹)</label>
+<input id="openingBalance" type="number" step="0.01" value="0">
+
+<button type="submit" id="saveBtn">Save Supplier</button>
+</form>
+
+<div id="message"></div>
+</div>
+
+<div class="card">
+<h2>Supplier List</h2>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Phone</th>
+<th>Address</th>
+<th>Opening Balance</th>
+</tr>
+</thead>
+<tbody id="supplierList">
+<tr><td colspan="4">Loading...</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+
+</div>
+
+<script>
+const cfg = window.MURI_CONFIG || {};
+const client = window.supabase.createClient(
+  cfg.SUPABASE_URL,
+  cfg.SUPABASE_KEY
+);
+
+async function checkLogin(){
+  const {data,error} = await client.auth.getSession();
+  if(error || !data.session){
+    location.href = "index.html";
+    return false;
+  }
+  return true;
+}
+
+async function loadSuppliers(){
+  const {data,error} = await client
+    .from("suppliers")
+    .select("supplier_name,phone,address,opening_balance")
+    .order("supplier_name");
+
+  const list = document.getElementById("supplierList");
+
+  if(error){
+    list.innerHTML = `<tr><td colspan="4">Error: ${error.message}</td></tr>`;
+    return;
+  }
+
+  if(!data || data.length === 0){
+    list.innerHTML = '<tr><td colspan="4">No suppliers added yet.</td></tr>';
+    return;
+  }
+
+  list.innerHTML = data.map(s => `
+    <tr>
+      <td>${escapeHTML(s.supplier_name)}</td>
+      <td>${escapeHTML(s.phone || "-")}</td>
+      <td>${escapeHTML(s.address || "-")}</td>
+      <td>₹${Number(s.opening_balance || 0).toFixed(2)}</td>
+    </tr>
+  `).join("");
+}
+
+function escapeHTML(value){
+  return String(value).replace(/[&<>"']/g, ch => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",
+    '"':"&quot;","'":"&#39;"
+  })[ch]);
+}
+
+document.getElementById("supplierForm").addEventListener("submit",async function(e){
+  e.preventDefault();
+
+  const btn = document.getElementById("saveBtn");
+  const msg = document.getElementById("message");
+  btn.disabled = true;
+  btn.textContent = "Saving...";
+  msg.textContent = "";
+
+  const supplier = {
+    supplier_name: document.getElementById("supplierName").value.trim(),
+    phone: document.getElementById("phone").value.trim() || null,
+    address: document.getElementById("address").value.trim() || null,
+    opening_balance: Number(document.getElementById("openingBalance").value || 0)
+  };
+
+  const {error} = await client.from("suppliers").insert(supplier);
+
+  if(error){
+    msg.textContent = "Error: " + error.message;
+    msg.style.color = "red";
+  }else{
+    msg.textContent = "Supplier saved successfully!";
+    msg.style.color = "green";
+    this.reset();
+    document.getElementById("openingBalance").value = 0;
+    await loadSuppliers();
+  }
+
+  btn.disabled = false;
+  btn.textContent = "Save Supplier";
+});
+
+(async function(){
+  if(await checkLogin()) await loadSuppliers();
+})();
+</script>
+
+</body>
+</html>
