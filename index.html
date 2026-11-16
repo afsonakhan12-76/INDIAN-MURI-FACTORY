@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>INDIAN MURI FACTORY | Login</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+
+<style>
+*{box-sizing:border-box}
+body{
+ margin:0;
+ min-height:100vh;
+ display:flex;
+ align-items:center;
+ justify-content:center;
+ padding:20px;
+ background:#edf3ef;
+ font-family:Arial,sans-serif;
+}
+.login-card{
+ width:100%;
+ max-width:410px;
+ background:white;
+ padding:32px 25px;
+ border-radius:18px;
+ box-shadow:0 10px 35px #00000012;
+}
+.logo{
+ width:65px;height:65px;
+ border-radius:16px;
+ background:#145c3c;
+ color:white;
+ display:grid;
+ place-items:center;
+ font-size:30px;
+ margin:0 auto 15px;
+}
+h2{text-align:center;color:#145c3c;margin:8px 0}
+.subtitle{text-align:center;color:#777;font-size:13px;margin-bottom:28px}
+label{display:block;font-weight:600;margin:15px 0 7px;font-size:14px}
+input{
+ width:100%;
+ padding:14px;
+ border:1px solid #d6ded8;
+ border-radius:9px;
+ font-size:15px;
+ outline:none;
+}
+input:focus{border-color:#16804d}
+.password-box{position:relative}
+.password-box input{padding-right:55px}
+.eye-btn{
+ position:absolute;
+ right:8px;top:50%;
+ transform:translateY(-50%);
+ border:0;background:transparent;
+ font-size:21px;cursor:pointer;
+}
+.login-btn{
+ width:100%;padding:14px;
+ background:#145c3c;color:white;
+ border:0;border-radius:9px;
+ font-size:16px;font-weight:bold;
+ margin-top:23px;cursor:pointer;
+}
+.login-btn:disabled{opacity:.6}
+#message{
+ text-align:center;font-size:13px;
+ margin-top:15px;min-height:20px;
+}
+.footer{text-align:center;color:#888;font-size:12px;margin-top:25px}
+</style>
+</head>
+
+<body>
+<div class="login-card">
+
+<div class="logo">🏭</div>
+
+<h2>INDIAN MURI FACTORY</h2>
+<div class="subtitle">Factory Management System</div>
+
+<form id="loginForm">
+
+<label>Email Address</label>
+<input id="email" type="email"
+placeholder="Enter your email" required>
+
+<label>Password</label>
+<div class="password-box">
+<input id="password" type="password"
+placeholder="Enter your password" required>
+<button class="eye-btn" type="button"
+id="togglePassword" aria-label="Show password">👁</button>
+</div>
+
+<button class="login-btn" id="loginBtn" type="submit">
+Login
+</button>
+
+<div id="message"></div>
+</form>
+
+<div class="footer">
+INDIAN MURI FACTORY © 2026
+</div>
+
+</div>
+
+<script>
+const cfg = window.MURI_CONFIG || {};
+
+const ready =
+ cfg.SUPABASE_URL?.startsWith("https://") &&
+ cfg.SUPABASE_KEY?.startsWith("sb_publishable_");
+
+const supabaseClient = ready
+ ? window.supabase.createClient(
+     cfg.SUPABASE_URL,
+     cfg.SUPABASE_KEY
+   )
+ : null;
+
+const form = document.getElementById("loginForm");
+const msg = document.getElementById("message");
+const btn = document.getElementById("loginBtn");
+
+document.getElementById("togglePassword").onclick = function(){
+ const password = document.getElementById("password");
+ const visible = password.type === "password";
+ password.type = visible ? "text" : "password";
+ this.textContent = visible ? "🙈" : "👁";
+};
+
+form.addEventListener("submit", async function(e){
+ e.preventDefault();
+
+ if(!supabaseClient){
+   msg.style.color="red";
+   msg.textContent="Supabase configuration is missing.";
+   return;
+ }
+
+ btn.disabled=true;
+ btn.textContent="Logging in...";
+ msg.textContent="";
+
+ try{
+   const {data,error} =
+    await supabaseClient.auth.signInWithPassword({
+      email:document.getElementById("email").value.trim(),
+      password:document.getElementById("password").value
+    });
+
+   if(error) throw error;
+
+   msg.style.color="green";
+   msg.textContent="Login successful!";
+
+   window.location.href="dashboard.html";
+
+ }catch(error){
+   msg.style.color="red";
+   msg.textContent=error.message;
+ }finally{
+   btn.disabled=false;
+   btn.textContent="Login";
+ }
+});
+</script>
+</body>
+</html>
