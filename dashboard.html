@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>INDIAN MURI FACTORY | Dashboard</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+
+<style>
+*{box-sizing:border-box}
+body{
+ margin:0;
+ background:#f1f5f2;
+ font-family:Arial,sans-serif;
+ color:#24352b;
+}
+header{
+ background:#145c3c;
+ color:white;
+ padding:19px;
+ display:flex;
+ align-items:center;
+ justify-content:space-between;
+ gap:10px;
+}
+header h2{font-size:18px;margin:0}
+header small{font-size:11px;color:#d6eadf}
+.logout{
+ background:white;color:#145c3c;
+ border:0;border-radius:7px;
+ padding:10px 14px;font-weight:bold;
+ cursor:pointer;
+}
+.container{padding:18px;max-width:1100px;margin:auto}
+.welcome{margin-bottom:20px}
+.welcome h2{margin-bottom:5px}
+.welcome p{color:#78857c;font-size:13px}
+.cards{
+ display:grid;
+ grid-template-columns:repeat(2,1fr);
+ gap:13px;
+}
+.card{
+ background:white;
+ padding:18px;
+ border-radius:12px;
+ box-shadow:0 3px 12px #00000008;
+}
+.card .label{color:#758178;font-size:13px}
+.card h2{font-size:25px;margin:12px 0 0;color:#145c3c}
+.section-title{margin:27px 0 13px;font-size:18px}
+.menu{
+ display:grid;
+ grid-template-columns:repeat(2,1fr);
+ gap:12px;
+}
+.menu-item{
+ background:white;
+ border-radius:11px;
+ padding:18px 12px;
+ text-align:center;
+ border:1px solid #e5ebe6;
+}
+.menu-item .icon{font-size:27px}
+.menu-item h3{font-size:14px;margin:10px 0 0}
+.menu-item small{font-size:11px;color:#89938b}
+.status{
+ margin-top:20px;
+ background:white;
+ padding:15px;
+ border-radius:10px;
+ font-size:13px;
+ color:#68766d;
+}
+footer{text-align:center;padding:25px;color:#89938b;font-size:12px}
+@media(min-width:700px){
+ .cards{grid-template-columns:repeat(4,1fr)}
+ .menu{grid-template-columns:repeat(4,1fr)}
+}
+</style>
+</head>
+
+<body>
+
+<header>
+ <div>
+  <h2>🏭 INDIAN MURI FACTORY</h2>
+  <small>Factory Management System</small>
+ </div>
+ <button class="logout" id="logoutBtn">Logout</button>
+</header>
+
+<main class="container">
+
+ <div class="welcome">
+  <h2>Dashboard</h2>
+  <p>Welcome to your Factory Management System.</p>
+  <small id="today"></small>
+ </div>
+
+ <div class="cards">
+
+  <div class="card">
+   <div class="label">Total Sales</div>
+   <h2 id="sales">₹ 0.00</h2>
+  </div>
+
+  <div class="card">
+   <div class="label">Total Expenses</div>
+   <h2 id="expenses">₹ 0.00</h2>
+  </div>
+
+  <div class="card">
+   <div class="label">Total Production</div>
+   <h2 id="production">0 KG</h2>
+  </div>
+
+  <div class="card">
+   <div class="label">Available Stock</div>
+   <h2 id="stock">0 KG</h2>
+  </div>
+
+ </div>
+
+ <h3 class="section-title">Management Menu</h3>
+
+ <div class="menu">
+  <div class="menu-item">
+   <div class="icon">🌾</div>
+   <h3>Raw Materials</h3>
+   <small>Material Management</small>
+  </div>
+
+  <div class="menu-item">
+   <div class="icon">🏭</div>
+   <h3>Production</h3>
+   <small>Production Records</small>
+  </div>
+
+  <div class="menu-item">
+   <div class="icon">📦</div>
+   <h3>Stock Management</h3>
+   <small>Available Products</small>
+  </div>
+
+  <div class="menu-item">
+   <div class="icon">🛒</div>
+   <h3>Sales</h3>
+   <small>Sales Records</small>
+  </div>
+
+  <div class="menu-item">
+   <div class="icon">💰</div>
+   <h3>Expenses</h3>
+   <small>Daily Expenses</small>
+  </div>
+
+  <div class="menu-item">
+   <div class="icon">👷</div>
+   <h3>Workers</h3>
+   <small>Labour Management</small>
+  </div>
+
+  <div class="menu-item">
+   <div class="icon">👥</div>
+   <h3>Customers</h3>
+   <small>Customer Records</small>
+  </div>
+
+  <div class="menu-item">
+   <div class="icon">🧾</div>
+   <h3>Invoices</h3>
+   <small>Billing Management</small>
+  </div>
+ </div>
+
+ <div class="status" id="status">
+  Connecting to database...
+ </div>
+
+</main>
+
+<footer>
+ INDIAN MURI FACTORY © 2026
+</footer>
+
+<script>
+const cfg=window.MURI_CONFIG||{};
+
+const client=
+ cfg.SUPABASE_URL &&
+ cfg.SUPABASE_KEY &&
+ window.supabase
+ ? window.supabase.createClient(
+     cfg.SUPABASE_URL,
+     cfg.SUPABASE_KEY
+   )
+ : null;
+
+const money=n=>"₹ "+Number(n||0).toLocaleString(
+ "en-IN",{minimumFractionDigits:2,maximumFractionDigits:2}
+ );
+
+document.getElementById("today").textContent=
+ new Date().toLocaleDateString("en-IN",{
+  day:"2-digit",month:"long",year:"numeric"
+ });
+
+async function init(){
+
+ if(!client){
+  document.getElementById("status").textContent=
+   "Database configuration missing.";
+  return;
+ }
+
+ const {data:{session},error}=await client.auth.getSession();
+
+ if(error||!session){
+  window.location.href="index.html";
+  return;
+ }
+
+ await loadDashboard();
+}
+
+async function loadDashboard(){
+
+ const status=document.getElementById("status");
+ status.textContent="Loading dashboard...";
+
+ try{
+
+  const [sales,expenses,production,stock]=await Promise.all([
+   client.from("sales").select("total_amount"),
+   client.from("expenses").select("amount"),
+   client.from("production_batches").select("output_quantity"),
+   client.from("finished_products").select("current_stock")
+  ]);
+
+  for(const result of [sales,expenses,production,stock]){
+   if(result.error) throw result.error;
+  }
+
+  const totalSales=(sales.data||[]).reduce(
+   (sum,item)=>sum+Number(item.total_amount||0),0
+  );
+
+  const totalExpenses=(expenses.data||[]).reduce(
+   (sum,item)=>sum+Number(item.amount||0),0
+  );
+
+  const totalProduction=(production.data||[]).reduce(
+   (sum,item)=>sum+Number(item.output_quantity||0),0
+  );
+
+  const totalStock=(stock.data||[]).reduce(
+   (sum,item)=>sum+Number(item.current_stock||0),0
+  );
+
+  document.getElementById("sales").textContent=money(totalSales);
+  document.getElementById("expenses").textContent=money(totalExpenses);
+  document.getElementById("production").textContent=
+   totalProduction.toLocaleString("en-IN")+" KG";
+  document.getElementById("stock").textContent=
+   totalStock.toLocaleString("en-IN")+" KG";
+
+  status.textContent="Database Connected Successfully.";
+
+ }catch(error){
+  status.textContent="Database Error: "+error.message;
+ }
+}
+
+document.getElementById("logoutBtn").onclick=async()=>{
+ if(!client)return;
+ await client.auth.signOut();
+ window.location.href="index.html";
+};
+
+init();
+</script>
+
+</body>
+</html>
